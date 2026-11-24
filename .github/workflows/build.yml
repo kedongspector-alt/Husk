@@ -7,9 +7,9 @@ on:
 
 jobs:
   build:
-    # macos-14 = Apple Silicon (arm64), needed because Husk's build assumes native arm64 hosts
-    # and uses Xcode. macos-latest currently maps to macos-14 too.
-    runs-on: macos-14
+    # Use macos-latest — macos-14 label can be restricted on some accounts.
+    # macos-latest currently points at macOS 14 arm64 anyway for Actions.
+    runs-on: macos-latest
     timeout-minutes: 360   # 6 hours; the first build can take 2-4 hrs
 
     steps:
