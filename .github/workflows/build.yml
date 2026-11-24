@@ -1,0 +1,64 @@
+name: Build Husk IPA
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:   # lets you click "Run workflow" from the Actions tab
+
+jobs:
+  build:
+    # macos-14 = Apple Silicon (arm64), needed because Husk's build assumes native arm64 hosts
+    # and uses Xcode. macos-latest currently maps to macos-14 too.
+    runs-on: macos-14
+    timeout-minutes: 360   # 6 hours; the first build can take 2-4 hrs
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Install build tools
+        run: |
+          brew install meson ninja pkg-config xcodegen qemu
+          # python3 is preinstalled on macos-14 runners
+
+      - name: Install Rust iOS target
+        run: |
+          rustup target add aarch64-apple-ios
+
+      # Cache the heavy per-dependency sysroot so reruns are fast.
+      # First build still takes hours; subsequent ones that only touch
+      # the Java framework or Swift app finish in minutes.
+      - name: Cache ios-arm64 sysroot
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/ios-arm64/sysroot
+            build/ios-arm64/lib
+            build/ios-arm64/cross-darwin.meson
+            build/ios-arm64/cross-ios-darwin.meson
+          key: husk-sysroot-${{ runner.os }}-${{ hashFiles('scripts/build_ios.sh', 'scripts/build_gpu_ios.sh', 'scripts/build_angle_ios.sh', 'scripts/build_moltenvk_ios.sh', 'scripts/fetch_sources.sh') }}
+
+      - name: Build
+        run: ./scripts/ci_build.sh
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Husk-ipa
+          path: |
+            build/Husk.ipa
+            build/Husk.tipa
+          if-no-files-found: error
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            build/**/meson-logs/**
+            build/**/*.log
+          if-no-files-found: ignore
