@@ -28,6 +28,12 @@ jobs:
         run: |
           rustup target add aarch64-apple-ios
 
+      - name: Make scripts executable
+        # Git on Windows doesn't preserve the +x bit, so scripts/*.sh come
+        # through without it. Add it before anything runs them.
+        run: |
+          find scripts -name '*.sh' -type f -exec chmod +x {} +
+
       # Cache the heavy per-dependency sysroot so reruns are fast.
       # First build still takes hours; subsequent ones that only touch
       # the Java framework or Swift app finish in minutes.
