@@ -22,7 +22,8 @@ jobs:
       - name: Install build tools
         run: |
           brew install meson ninja pkg-config xcodegen qemu
-          # python3 is preinstalled on macos-14 runners
+          # python3 is preinstalled; virglrenderer's meson wants pyyaml
+          /opt/homebrew/bin/python3 -m pip install --break-system-packages pyyaml
 
       - name: Install Rust iOS target
         run: |
